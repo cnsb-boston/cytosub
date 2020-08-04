@@ -1,0 +1,10 @@
+ROBJ = post_run_py.o
+OBJECTS = $(ROBJ)
+
+all: $(SHLIB)
+
+$(SHLIB): $(OBJECTS)
+$(OBJECTS): $(OBEXTRA)
+
+clean:
+	rm -rf ./libs ./*.so ./*.o

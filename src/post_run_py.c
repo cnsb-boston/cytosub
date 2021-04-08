@@ -121,7 +121,7 @@ int write_out_message( char * message ) {
    the user specify incorrectly? How many source and target nodes were
    specified correctly? Report this in the 'run_py_out.txt' file.
 */
-void process_in_nodes( struct node_record * head_all_nodes ) {
+int process_in_nodes( struct node_record * head_all_nodes ) {
 	FILE * in_txt;
 	char line[MAX_LINE_LEN+1];
 	char node_name[400];
@@ -134,7 +134,7 @@ void process_in_nodes( struct node_record * head_all_nodes ) {
 	if (in_txt == NULL) {
 		printf( "unable to open 'in.txt'\n" );
 		write_out_message( "Unable to open 'in.txt', please report this." );
-		exit(-1);
+		return 1;
 	}
 
 	num_source = 0;
@@ -148,7 +148,7 @@ void process_in_nodes( struct node_record * head_all_nodes ) {
 		if (sscanf( line, "%s %s", node_name, node_role ) != 2) {
     		printf( "bad line %d 'in.txt': %s", line_num, line );
 	    	write_out_message( "Unable to read 'in.txt', please report this." );
-		    exit(-1);
+		    return 1;
     	}
 		
         for (cur_node = head_all_nodes; cur_node != NULL; cur_node = cur_node->next) {
@@ -174,6 +174,8 @@ void process_in_nodes( struct node_record * head_all_nodes ) {
 	         num_source, (num_source != 1) ? "nodes" : "node",
 			 num_target, (num_target != 1) ? "nodes" : "node" );
 	write_out_message( line );
+
+	return 0;
 }
 
 /* The format of a path: A|B|C|etc where each letter represents a node name.
@@ -224,7 +226,7 @@ struct out_path * load_out_paths( char * paths_file_name ) {
 		else
 			write_out_message( "Path analysis was not completed successfully." );
 
-		exit(-1);
+		return NULL;
 	}
 	
 	head_out_path = NULL;
@@ -317,7 +319,7 @@ bad_line:
 		   	   
 	printf( "bad line %d in '%s'\n", line_num, paths_file_name );
     write_out_message( "Path analysis was not completed successfully." );
-	exit(-1);     	     	          	            
+	return NULL;
 }
 
 /* Flag any node and edge that appears on a path detected by 'run_py'.
@@ -520,6 +522,7 @@ int post_run_py( int argc, char ** argv ) {
 	int    need_braces_line;
 	int    num_nodes;
 	int    num_edges;
+	int    ret;
 	
 	if (argc != 3) {
 		print_usage();
@@ -1046,13 +1049,15 @@ int post_run_py( int argc, char ** argv ) {
 
     /* Load 'in.txt' */
 	printf( "post_run_py: loading 'in.txt'\n" );
-	process_in_nodes( head_node );
+	if((ret=process_in_nodes( head_node )))
+		return ret;
 
     /* Load the list of detected path. The file name will depend on the limit specified
 	   for the number of paths to be recorded ('k').
 	*/
 	printf( "post_run_py: loading detected paths from '%s'\n", argv[1] );
-	head_out_path = load_out_paths( argv[1] );
+	if(!(head_out_path = load_out_paths( argv[1] )))
+		return 1;
 
     /* Mark the nodes and edges that are part of the paths detected by 'run.py'.*/
 	printf( "post_run_py: marking nodes and edges that are part of the detected paths\n" );
